@@ -12,8 +12,11 @@ RUN npm ci
 # Copier tout le code source
 COPY . .
 
-# Construire l'application
-RUN npm run build
+# Donner les permissions d'exécution à node_modules/.bin
+RUN chmod -R +x node_modules/.bin
+
+# Construire l'application (en utilisant le chemin direct vers vite)
+RUN ./node_modules/.bin/vite build
 
 # Étape 2 : Serveur de production
 FROM node:20-alpine
