@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Package, Warehouse, ClipboardList, 
   ArrowLeftRight, Trash2, AlertTriangle, Wrench, 
   Settings, ChevronDown, LogOut, Shield,
-  Circle, FileSpreadsheet, TrendingUp, Smartphone
+  Circle, FileSpreadsheet, TrendingUp, Smartphone, Menu, X
 } from "lucide-react";
 import { getCurrentUser, logout } from "../api/auth";
 import { usePermissions } from "../contexts/PermissionsContext";
@@ -39,6 +39,7 @@ const AppLayout: React.FC = () => {
   const { hasPermission, hasAnyRole, loading, permissions } = usePermissions();
   const [operationsOpen, setOperationsOpen] = useState(true);
   const [online, setOnline] = useState(navigator.onLine);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handleStatus = () => setOnline(navigator.onLine);
@@ -49,6 +50,24 @@ const AppLayout: React.FC = () => {
       window.removeEventListener("offline", handleStatus);
     };
   }, []);
+
+  // Fermer le sidebar quand la fenêtre est redimensionnée au-delà de 768px
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleNavClick = (path: string) => {
+    navigate(path);
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  };
 
   const navItems = useMemo<NavItem[]>(() => [
     { path: "/", label: "Tableau de bord", requiredPermission: "VIEW_DASHBOARD", icon: <LayoutDashboard size={20} /> },
@@ -83,7 +102,21 @@ const AppLayout: React.FC = () => {
 
   return (
     <div className="executive-shell">
-      <aside className="executive-sidebar">
+      {/* Bouton menu mobile */}
+      <button 
+        className="mobile-menu-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Overlay pour fermer le menu sur mobile */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar avec classe conditionnelle */}
+      <aside className={`executive-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
         {/* --- BRAND --- */}
         <div className="sidebar-header-premium">
           <BrandLogo />
@@ -116,7 +149,12 @@ const AppLayout: React.FC = () => {
           <div className="nav-group-premium">
             <span className="group-title">Principal</span>
             {primaryItems.map(item => (
-              <Link key={item.path} to={item.path} className={`nav-link-premium ${isPathActive(item.path) ? 'active' : ''}`}>
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                className={`nav-link-premium ${isPathActive(item.path) ? 'active' : ''}`}
+                onClick={() => handleNavClick(item.path)}
+              >
                 <span className="nav-icon-box">{item.icon}</span>
                 <span className="nav-label">{item.label}</span>
                 {isPathActive(item.path) && <motion.div layoutId="nav-active" className="nav-active-pill" />}
@@ -134,7 +172,12 @@ const AppLayout: React.FC = () => {
                 {operationsOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="group-panel">
                     {operationItems.map(item => (
-                      <Link key={item.path} to={item.path} className={`nav-link-premium ${isPathActive(item.path) ? 'active' : ''}`}>
+                      <Link 
+                        key={item.path} 
+                        to={item.path} 
+                        className={`nav-link-premium ${isPathActive(item.path) ? 'active' : ''}`}
+                        onClick={() => handleNavClick(item.path)}
+                      >
                         <span className="nav-icon-box">{item.icon}</span>
                         <span className="nav-label">{item.label}</span>
                       </Link>
@@ -149,7 +192,12 @@ const AppLayout: React.FC = () => {
             <div className="nav-group-premium">
               <span className="group-title">Paramètres</span>
               {adminItems.map(item => (
-                <Link key={item.path} to={item.path} className={`nav-link-premium ${isPathActive(item.path) ? 'active' : ''}`}>
+                <Link 
+                  key={item.path} 
+                  to={item.path} 
+                  className={`nav-link-premium ${isPathActive(item.path) ? 'active' : ''}`}
+                  onClick={() => handleNavClick(item.path)}
+                >
                   <span className="nav-icon-box">{item.icon}</span>
                   <span className="nav-label">{item.label}</span>
                 </Link>
@@ -174,6 +222,7 @@ const AppLayout: React.FC = () => {
 
       <style>{`
         .executive-shell { display: flex; min-height: 100vh; background: #f8fafc; }
+        
         .executive-sidebar { 
           width: 280px; 
           background: white; 
@@ -184,6 +233,72 @@ const AppLayout: React.FC = () => {
           position: sticky;
           top: 0;
           height: 100vh;
+        }
+
+        /* Styles pour mobile */
+        .mobile-menu-toggle {
+          display: none;
+          position: fixed;
+          top: 15px;
+          left: 15px;
+          z-index: 1001;
+          width: 44px;
+          height: 44px;
+          background: #4f46e5;
+          color: white;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .sidebar-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 999;
+        }
+
+        @media (max-width: 768px) {
+          .mobile-menu-toggle {
+            display: flex;
+          }
+          
+          .executive-sidebar {
+            position: fixed;
+            left: -280px;
+            top: 0;
+            z-index: 1000;
+            transition: left 0.3s ease;
+            height: 100vh;
+            overflow-y: auto;
+          }
+          
+          .executive-sidebar.mobile-open {
+            left: 0;
+          }
+          
+          .sidebar-overlay {
+            display: block;
+          }
+          
+          .executive-main {
+            flex: 1;
+            margin-left: 0;
+            padding-top: 60px;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .mobile-menu-toggle {
+            display: none;
+          }
         }
 
         .sidebar-header-premium { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; padding: 0 10px; }
