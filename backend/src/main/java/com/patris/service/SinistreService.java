@@ -72,25 +72,23 @@ public class SinistreService {
     }
 
     public Sinistre valider(Long id, String statut, String validateur) {
-    Sinistre s = findById(id);
-    // Convert String to enum using valueOf (exact match required)
-    s.setStatut(com.patris.enums.statutSinistre.valueOf(statut));
-    s.setDateCloture(java.time.LocalDate.now());
-    Sinistre saved = sinistreRepository.save(s);
+        Sinistre s = findById(id);
+        s.setStatut(com.patris.enums.statutSinistre.from(statut));
+        s.setDateCloture(java.time.LocalDate.now());
+        Sinistre saved = sinistreRepository.save(s);
 
-    try {
-        if (s.getBien() != null && s.getBien().getId() != null) {
-            Bien b = s.getBien();
-            if ("PERTE_TOTALE".equals(s.getGravite()) && s.getMontantIndemnise() != null && s.getMontantIndemnise() > 0) {
-                // Convert String to enum using valueOf
-                b.setStatutOperationnel(com.patris.enums.statutOperationnel.valueOf("REFORME"));
-                bienRepository.save(b);
+        try {
+            if (s.getBien() != null && s.getBien().getId() != null) {
+                Bien b = s.getBien();
+                if ("PERTE_TOTALE".equals(s.getGravite()) && s.getMontantIndemnise() != null && s.getMontantIndemnise() > 0) {
+                    b.setStatutOperationnel(com.patris.enums.statutOperationnel.REFORME);
+                    bienRepository.save(b);
+                }
             }
+        } catch (Exception ex) {
+            // ignore failures when updating bien status
         }
-    } catch (Exception ex) {
-    }
 
-    return saved;
-
+        return saved;
     }
 }
